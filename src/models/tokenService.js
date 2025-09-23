@@ -1,9 +1,12 @@
-// src/models/tokenService.js
+// services/tokenService.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const getAuthToken = async () => {
-  const user = await AsyncStorage.getItem('user');
-  if (!user) return null;
-  const parsed = JSON.parse(user);
-  return parsed.token;
+  try {
+    const token = await AsyncStorage.getItem('token');
+    return token;
+  } catch (error) {
+    console.error('Error obteniendo token:', error);
+    return null;
+  }
 };

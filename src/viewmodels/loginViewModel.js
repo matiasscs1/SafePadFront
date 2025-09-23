@@ -1,3 +1,4 @@
+// viewmodels/loginViewModel.js
 import { useState } from "react";
 import {
   registrarUsuario,
@@ -7,8 +8,12 @@ import {
   ingresarSerial,
   eliminarUsuario,
 } from "../models/loginModels.js";
+import { useAuth } from '../context/AuthContext';
 
 export const useUsuarioViewModel = () => {
+  // Obtener funciones del AuthContext
+  const { login: authLogin } = useAuth();
+
   // ===== ESTADOS GENERALES =====
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
@@ -27,7 +32,23 @@ export const useUsuarioViewModel = () => {
   const login = async () => {
     setLoading(true);
     try {
-      return await loginUsuario(correo, contrasena);
+      // Llamar al servicio de login
+      const response = await loginUsuario(correo, contrasena);
+      
+      if (response.success) {
+        // Usar el AuthContext para guardar los datos
+        await authLogin(response.data.usuario, response.data.token);
+        
+        // Limpiar campos del formulario
+        setCorreo('');
+        setContrasena('');
+        
+        return response;
+      } else {
+        throw new Error(response.message || 'Error en el login');
+      }
+    } catch (error) {
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -36,18 +57,36 @@ export const useUsuarioViewModel = () => {
   const loginAdminView = async () => {
     setLoading(true);
     try {
-      return await loginAdmin(correo, contrasena);
+      // Llamar al servicio de login admin
+      const response = await loginAdmin(correo, contrasena);
+      
+      if (response.success) {
+        // Usar el AuthContext para guardar los datos
+        await authLogin(response.data.usuario, response.data.token);
+        
+        // Limpiar campos del formulario
+        setCorreo('');
+        setContrasena('');
+        
+        return response;
+      } else {
+        throw new Error(response.message || 'Error en el login de admin');
+      }
+    } catch (error) {
+      throw error;
     } finally {
       setLoading(false);
     }
   };
 
+  // Registro - NO guarda token, solo registra
   const registrar = async (formData) => {
     setLoading(true);
     try {
       const data = await registrarUsuario(formData);
-      setModalVisible(true);
       return data;
+    } catch (error) {
+      throw error;
     } finally {
       setLoading(false);
     }

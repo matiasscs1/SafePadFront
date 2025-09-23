@@ -1,11 +1,13 @@
+// screens/LoginScreen.js
 import { styles } from '../../styles/LoginScreen.style.js';
 import { View, TextInput, Text, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useUsuarioViewModel } from '../../viewmodels/loginViewModel.js';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useAuth } from '../../context/AuthContext.js';
 import Loader from '../components/Loader.js';
 import Toast from 'react-native-toast-message';
 import { Shield, Eye, EyeOff } from 'lucide-react-native';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 
 export default function LoginScreen() {
   const {
@@ -17,11 +19,40 @@ export default function LoginScreen() {
     loading,
   } = useUsuarioViewModel();
 
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const navigation = useNavigation();
   const [showPassword, setShowPassword] = useState(false);
   const [rememberSession, setRememberSession] = useState(false);
 
+  // Verificar autenticación cada vez que se enfoca la pantalla
+  useFocusEffect(
+    useCallback(() => {
+      if (!authLoading && isAuthenticated()) {
+        navigation.replace('Home');
+      }
+    }, [authLoading, isAuthenticated, navigation])
+  );
+
   const handleLogin = async () => {
+    // Validaciones básicas
+    if (!correo.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Campo requerido',
+        text2: 'Por favor ingresa tu correo electrónico',
+      });
+      return;
+    }
+
+    if (!contrasena.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Campo requerido',
+        text2: 'Por favor ingresa tu contraseña',
+      });
+      return;
+    }
+
     try {
       const res = await login();
       Toast.show({
@@ -29,15 +60,20 @@ export default function LoginScreen() {
         text1: 'Bienvenido',
         text2: `Hola ${res?.data?.usuario?.nombre || ''}`,
       });
-      navigation.navigate('Home');
+      navigation.replace('Home');
     } catch (err) {
       Toast.show({
         type: 'error',
         text1: 'Error al iniciar sesión',
-        text2: err.message,
+        text2: err.message || 'Credenciales incorrectas',
       });
     }
   };
+
+  // Si está cargando la autenticación, mostrar loader
+  if (authLoading) {
+    return <Loader visible={true} />;
+  }
 
   return (
     <KeyboardAvoidingView 
@@ -54,7 +90,6 @@ export default function LoginScreen() {
 
           {/* Header con icono y títulos */}
           <View style={styles.header}>
-            {/* Logo grande sin cuadrado, directamente sobre el fondo */}
             <Shield color="black" size={120} strokeWidth={2} style={styles.logo} />
             <Text style={styles.title}>Iniciar Sesión</Text>
             <Text style={styles.subtitle}>Bienvenido de vuelta a SafePad</Text>
@@ -73,6 +108,7 @@ export default function LoginScreen() {
                 onChangeText={setCorreo}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                autoCorrect={false}
               />
             </View>
 
@@ -87,6 +123,7 @@ export default function LoginScreen() {
                   secureTextEntry={!showPassword}
                   value={contrasena}
                   onChangeText={setContrasena}
+                  autoCapitalize="none"
                 />
                 <TouchableOpacity
                   style={styles.eyeIcon}
@@ -119,7 +156,11 @@ export default function LoginScreen() {
             </View>
 
             {/* Botón Iniciar Sesión */}
-            <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+            <TouchableOpacity 
+              style={[styles.loginButton, loading && styles.disabledButton]} 
+              onPress={handleLogin}
+              disabled={loading}
+            >
               <Text style={styles.loginButtonText}>→  Iniciar Sesión</Text>
             </TouchableOpacity>
 

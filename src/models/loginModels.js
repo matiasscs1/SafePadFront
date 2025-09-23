@@ -1,6 +1,7 @@
+// models/loginModels.js
 import { getAuthToken } from "./tokenService";
 
-const BASE_URL = "http://10.0.0.166:4003"; 
+const BASE_URL = "http://10.0.0.165:4003"; 
 
 // === Registro de Usuario ===
 export const registrarUsuario = async (usuarioData) => {
@@ -16,9 +17,6 @@ export const registrarUsuario = async (usuarioData) => {
 
 // === Login Usuario ===
 export const loginUsuario = async (correo, contrasena) => {
-  
-  console.log("Iniciando login para:", correo); // Log para depuración
-  console.log("Contraseña proporcionada:", contrasena ? "Sí" : "No"); // No mostrar la contraseña real
   const res = await fetch(`${BASE_URL}/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -55,7 +53,7 @@ export const cambiarContrasena = async (correo, nueva_contrasena, pregunta_segur
 
 // === Asignar iPad al usuario ===
 export const ingresarSerial = async (serial_ipad) => {
-  const token = await getAuthToken(); // tu función para leer el token del storage
+  const token = await getAuthToken();
   const res = await fetch(`${BASE_URL}/ipad/asignar`, {
     method: "PUT",
     headers: {

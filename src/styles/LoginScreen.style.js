@@ -151,12 +151,12 @@ export const styles = StyleSheet.create({
   
   loginButton: {
     width: "100%",
-    backgroundColor: "#22C55E",
+    backgroundColor: "#00bc7d",
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: "center",
     marginBottom: 16,
-    shadowColor: "#22C55E",
+    shadowColor: "#00bc7d",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

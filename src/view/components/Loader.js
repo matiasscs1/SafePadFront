@@ -1,23 +1,27 @@
+// components/Loader.js
 import React from 'react';
-import { View, ActivityIndicator, Modal, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 
 export default function Loader({ visible = false }) {
   if (!visible) return null;
 
   return (
-    <Modal transparent animationType="fade">
-      <View style={styles.overlay}>
-        <ActivityIndicator size="large" color="#39FF14" /> {/* Verde fosforescente */}
-      </View>
-    </Modal>
+    <View style={styles.overlay}>
+      <ActivityIndicator size="large" color="#39FF14" />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.3)',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 1000,
   },
 });

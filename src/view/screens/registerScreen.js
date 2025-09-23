@@ -25,7 +25,7 @@ const RegisterScreen = ({ navigation }) => {
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
   const [correoElectronico, setCorreoElectronico] = useState('');
-  const [serialIpad, setSerialIpad] = useState('');
+  const [serialsIpad, setSerialsIpad] = useState(['']); // Array para múltiples seriales
   const [fechaNacimiento, setFechaNacimiento] = useState('');
   const [contrasena, setContrasena] = useState('');
   const [confirmarContrasena, setConfirmarContrasena] = useState('');
@@ -35,13 +35,38 @@ const RegisterScreen = ({ navigation }) => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [errors, setErrors] = useState({});
 
+  // Pregunta de seguridad única
+  const [mascotaPreferida, setMascotaPreferida] = useState('');
+
+  // Validar solo letras
+  const isValidName = (name) => {
+    const nameRegex = /^[a-zA-ZÀ-ÿ\s]+$/;
+    return nameRegex.test(name);
+  };
+
   // Validar email
   const isValidEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  // Validar contraseña
+  // Funciones para manejar seriales múltiples
+  const addSerialField = () => {
+    setSerialsIpad([...serialsIpad, '']);
+  };
+
+  const removeSerialField = (index) => {
+    if (serialsIpad.length > 1) {
+      const newSerials = serialsIpad.filter((_, i) => i !== index);
+      setSerialsIpad(newSerials);
+    }
+  };
+
+  const updateSerial = (index, value) => {
+    const newSerials = [...serialsIpad];
+    newSerials[index] = value;
+    setSerialsIpad(newSerials);
+  };
   const getPasswordRequirements = () => {
     if (!contrasena) return null;
     
@@ -63,15 +88,34 @@ const RegisterScreen = ({ navigation }) => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!nombre.trim()) newErrors.nombre = 'El nombre es obligatorio';
-    if (!apellido.trim()) newErrors.apellido = 'El apellido es obligatorio';
+    if (!nombre.trim()) {
+      newErrors.nombre = 'El nombre es obligatorio';
+    } else if (!isValidName(nombre.trim())) {
+      newErrors.nombre = 'El nombre solo debe contener letras';
+    }
+    
+    if (!apellido.trim()) {
+      newErrors.apellido = 'El apellido es obligatorio';
+    } else if (!isValidName(apellido.trim())) {
+      newErrors.apellido = 'El apellido solo debe contener letras';
+    }
+    
     if (!correoElectronico.trim()) {
       newErrors.correoElectronico = 'El correo electrónico es obligatorio';
     } else if (!isValidEmail(correoElectronico)) {
       newErrors.correoElectronico = 'El formato del correo no es válido';
     }
-    if (!serialIpad.trim()) newErrors.serialIpad = 'El número serial del iPad es obligatorio';
+    
+    // Validar seriales
+    const emptySerials = serialsIpad.filter(serial => !serial.trim());
+    if (emptySerials.length > 0) {
+      newErrors.serialsIpad = 'Todos los seriales del iPad son obligatorios';
+    }
+    
     if (!fechaNacimiento.trim()) newErrors.fechaNacimiento = 'La fecha de nacimiento es obligatoria';
+    
+    // Validar pregunta de seguridad
+    if (!mascotaPreferida.trim()) newErrors.mascotaPreferida = 'El nombre de tu mascota o animal preferido es obligatorio';
     
     if (!contrasena.trim()) {
       newErrors.contrasena = 'La contraseña es obligatoria';
@@ -93,17 +137,34 @@ const RegisterScreen = ({ navigation }) => {
   };
 
   const handleDateChange = (event, selectedDate) => {
-    setShowDatePicker(false);
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    
     if (selectedDate) {
       const formattedDate = selectedDate.toISOString().split('T')[0];
       setFechaNacimiento(formattedDate);
+      
+      if (Platform.OS === 'ios') {
+        setShowDatePicker(false);
+      }
+    } else if (Platform.OS === 'ios') {
+      setShowDatePicker(false);
     }
   };
 
   const formatDateForDisplay = (dateString) => {
     if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('es-ES');
+    const date = new Date(dateString + 'T00:00:00'); // Evitar problemas de zona horaria
+    return date.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit', 
+      year: 'numeric'
+    });
+  };
+
+  const openDatePicker = () => {
+    setShowDatePicker(true);
   };
 
   const handleRegisterPress = async () => {
@@ -120,57 +181,63 @@ const RegisterScreen = ({ navigation }) => {
       nombre: nombre.trim(),
       apellido: apellido.trim(),
       correo: correoElectronico.trim().toLowerCase(),
-      serial_ipad: serialIpad.trim(),
+      series_dispositivos: serialsIpad.filter(serial => serial.trim()),
       fecha_nacimiento: fechaNacimiento,
       contrasena: contrasena,
-      recordarme: recordarme
+      preguntas_seguridad: mascotaPreferida.trim(), // Solo la respuesta del usuario
+      rol: 'usuario',
+      estado: 'activo'
     };
 
     try {
       await registrar(formData);
       Toast.show({
         type: 'success',
-        text1: 'Éxito',
-        text2: 'Cuenta creada exitosamente',
+        text1: 'Registro exitoso',
+        text2: 'Tu cuenta ha sido creada correctamente',
       });
       
       // Limpiar formulario
       setNombre('');
       setApellido('');
       setCorreoElectronico('');
-      setSerialIpad('');
+      setSerialsIpad(['']);
       setFechaNacimiento('');
       setContrasena('');
       setConfirmarContrasena('');
+      setMascotaPreferida('');
       setRecordarme(false);
       setErrors({});
       navigation.navigate('Login');
     } catch (error) {
-      console.error('Error en registro:', error);
+      // Solo mostrar en Toast, no en console
       Toast.show({
         type: 'error',
-        text1: 'Error',
-        text2: error.message || 'Ha ocurrido un error durante el registro',
+        text1: 'Error en el registro',
+        text2: error.message || 'Ha ocurrido un error. Intenta nuevamente',
       });
     }
   };
 
   const passwordRequirements = getPasswordRequirements();
+  const hasValidSerials = serialsIpad.every(serial => serial.trim());
   const isFormValid = nombre.trim() && apellido.trim() && correoElectronico.trim() && 
-                     serialIpad.trim() && fechaNacimiento.trim() && contrasena.trim() && 
-                     confirmarContrasena.trim() && Object.keys(errors).length === 0;
+                     hasValidSerials && fechaNacimiento.trim() && contrasena.trim() && 
+                     confirmarContrasena.trim() && mascotaPreferida.trim() && 
+                     Object.keys(errors).length === 0;
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.keyboardContainer} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView 
-        contentContainerStyle={styles.scrollContainer}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView 
+        style={styles.keyboardContainer} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
-        <View style={styles.container}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           {/* Header */}
           <View style={styles.header}>
             <Shield color="black" size={80} strokeWidth={2} style={styles.logo} />
@@ -227,18 +294,35 @@ const RegisterScreen = ({ navigation }) => {
               )}
             </View>
 
-            {/* Número serial del iPad */}
+            {/* Números seriales del iPad */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Número serial del iPad</Text>
-              <TextInput
-                style={[styles.input, errors.serialIpad && styles.inputError]}
-                placeholder="COXXXXXXXX"
-                placeholderTextColor="#9CA3AF"
-                value={serialIpad}
-                onChangeText={setSerialIpad}
-                autoCapitalize="characters"
-              />
-              {errors.serialIpad && <Text style={styles.errorText}>{errors.serialIpad}</Text>}
+              <View style={styles.serialHeader}>
+                <Text style={styles.label}>Números seriales del iPad</Text>
+                <TouchableOpacity onPress={addSerialField} style={styles.addButton}>
+                  <Text style={styles.addButtonText}>+ Agregar</Text>
+                </TouchableOpacity>
+              </View>
+              {serialsIpad.map((serial, index) => (
+                <View key={index} style={styles.serialRow}>
+                  <TextInput
+                    style={[styles.serialInput, errors.serialsIpad && styles.inputError]}
+                    placeholder="COXXXXXXXX"
+                    placeholderTextColor="#9CA3AF"
+                    value={serial}
+                    onChangeText={(value) => updateSerial(index, value)}
+                    autoCapitalize="characters"
+                  />
+                  {serialsIpad.length > 1 && (
+                    <TouchableOpacity 
+                      onPress={() => removeSerialField(index)}
+                      style={styles.removeButton}
+                    >
+                      <Text style={styles.removeButtonText}>×</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ))}
+              {errors.serialsIpad && <Text style={styles.errorText}>{errors.serialsIpad}</Text>}
             </View>
 
             {/* Fecha de nacimiento */}
@@ -246,10 +330,11 @@ const RegisterScreen = ({ navigation }) => {
               <Text style={styles.label}>Fecha de nacimiento</Text>
               <TouchableOpacity
                 style={[styles.input, styles.dateInput, errors.fechaNacimiento && styles.inputError]}
-                onPress={() => setShowDatePicker(true)}
+                onPress={openDatePicker}
+                activeOpacity={0.7}
               >
                 <Text style={[styles.dateText, !fechaNacimiento && styles.placeholder]}>
-                  {fechaNacimiento ? formatDateForDisplay(fechaNacimiento) : 'dd/mm/aaaa'}
+                  {fechaNacimiento ? formatDateForDisplay(fechaNacimiento) : 'Selecciona tu fecha de nacimiento'}
                 </Text>
                 <Calendar color="#9CA3AF" size={20} />
               </TouchableOpacity>
@@ -315,7 +400,19 @@ const RegisterScreen = ({ navigation }) => {
               </View>
             )}
 
-            {/* Confirmar contraseña */}
+            {/* Pregunta de seguridad */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>¿Cuál es el nombre de tu mascota o animal preferido?</Text>
+              <TextInput
+                style={[styles.input, errors.mascotaPreferida && styles.inputError]}
+                placeholder="Nombre de tu mascota o animal preferido"
+                placeholderTextColor="#9CA3AF"
+                value={mascotaPreferida}
+                onChangeText={setMascotaPreferida}
+                autoCapitalize="words"
+              />
+              {errors.mascotaPreferida && <Text style={styles.errorText}>{errors.mascotaPreferida}</Text>}
+            </View>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Confirmar contraseña</Text>
               <View style={styles.passwordContainer}>
@@ -346,8 +443,6 @@ const RegisterScreen = ({ navigation }) => {
 
             {/* Opciones */}
             <View style={styles.optionsRow}>
-              
-
               <TouchableOpacity onPress={() => navigation.navigate('Login')}>
                 <Text style={styles.loginLink}>¿Ya tienes cuenta? Inicia Sesión</Text>
               </TouchableOpacity>
@@ -367,20 +462,53 @@ const RegisterScreen = ({ navigation }) => {
             </TouchableOpacity>
           </View>
 
-          {/* DatePicker */}
+          {/* DatePicker Modal */}
           {showDatePicker && (
-            <DateTimePicker
-              value={new Date()}
-              mode="date"
-              display="default"
-              onChange={handleDateChange}
-              maximumDate={new Date()}
-              minimumDate={new Date(1900, 0, 1)}
-            />
+            <View style={styles.datePickerContainer}>
+              <View style={styles.datePickerModal}>
+                <View style={styles.datePickerHeader}>
+                  <Text style={styles.datePickerTitle}>Selecciona tu fecha de nacimiento</Text>
+                  <TouchableOpacity 
+                    onPress={() => setShowDatePicker(false)}
+                    style={styles.closeButton}
+                  >
+                    <Text style={styles.closeButtonText}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+                <DateTimePicker
+                  value={fechaNacimiento ? new Date(fechaNacimiento + 'T00:00:00') : new Date()}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={handleDateChange}
+                  maximumDate={new Date()}
+                  minimumDate={new Date(1900, 0, 1)}
+                  style={styles.datePicker}
+                  textColor="#000000"
+                  accentColor="#00bc7d"
+                  themeVariant="light"
+                />
+                {Platform.OS === 'ios' && (
+                  <View style={styles.datePickerButtons}>
+                    <TouchableOpacity 
+                      onPress={() => setShowDatePicker(false)}
+                      style={[styles.dateButton, styles.cancelButton]}
+                    >
+                      <Text style={styles.cancelButtonText}>Cancelar</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity 
+                      onPress={() => setShowDatePicker(false)}
+                      style={[styles.dateButton, styles.confirmButton]}
+                    >
+                      <Text style={styles.confirmButtonText}>Confirmar</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            </View>
           )}
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
