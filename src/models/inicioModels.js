@@ -1,7 +1,7 @@
 // models/inicioModels.js
 import { getAuthToken } from "./tokenService";
 
-const BASE_URL = "http://10.0.0.165:4003"; 
+const BASE_URL = "http://10.0.0.182:4003"; 
 
 // === Obtener todos los iPads del usuario ===
 export const obtenerIpadsPorUsuario = async () => {

@@ -1,7 +1,7 @@
 // models/loginModels.js
 import { getAuthToken } from "./tokenService";
 
-const BASE_URL = "http://10.0.0.165:4003"; 
+const BASE_URL = "http://10.0.0.182:4003"; 
 
 // === Registro de Usuario ===
 export const registrarUsuario = async (usuarioData) => {

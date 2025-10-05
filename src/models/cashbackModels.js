@@ -1,10 +1,10 @@
-// models/miIpadModels.js
+// models/cashbackModels.js
 import { getAuthToken } from "./tokenService";
 
 const BASE_URL = "http://10.0.0.182:4003"; 
 
-// === Obtener todos los iPads del usuario ===
-export const obtenerIpadsPorUsuario = async () => {
+// === Obtener cashback del usuario ===
+export const obtenerCashbackUsuario = async () => {
   try {
     const token = await getAuthToken();
     
@@ -12,7 +12,7 @@ export const obtenerIpadsPorUsuario = async () => {
       throw new Error("No hay token de autenticación");
     }
 
-    const res = await fetch(`${BASE_URL}/ipad/usuario`, {
+    const res = await fetch(`${BASE_URL}/cashback/usuario`, {
       method: "GET",
       headers: {
         "Authorization": `Bearer ${token}`,
@@ -20,7 +20,6 @@ export const obtenerIpadsPorUsuario = async () => {
       },
     });
 
-    // Verificar si la respuesta es JSON
     const contentType = res.headers.get("content-type");
     if (!contentType || !contentType.includes("application/json")) {
       const textResponse = await res.text();
@@ -28,6 +27,7 @@ export const obtenerIpadsPorUsuario = async () => {
     }
 
     const data = await res.json();
+    console.log("Respuesta de obtenerCashbackUsuario:", data);
     
     if (!res.ok) {
       throw new Error(data.message || `Error HTTP ${res.status}`);
@@ -35,13 +35,13 @@ export const obtenerIpadsPorUsuario = async () => {
     
     return data;
   } catch (error) {
-    console.error("Error en obtenerIpadsPorUsuario:", error);
+    console.error("Error en obtenerCashbackUsuario:", error);
     throw error;
   }
 };
 
-// === Renovar garantía SafePad ===
-export const renovarGarantiaSafePad = async (id_garantia, fecha_inicio, fecha_vencimiento) => {
+// === Obtener productos de cashback ===
+export const obtenerProductosCashback = async () => {
   try {
     const token = await getAuthToken();
     
@@ -49,47 +49,7 @@ export const renovarGarantiaSafePad = async (id_garantia, fecha_inicio, fecha_ve
       throw new Error("No hay token de autenticación");
     }
 
-    const res = await fetch(`${BASE_URL}/garantia/renovar/${id_garantia}`, {
-      method: "PUT",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        fecha_inicio,
-        fecha_vencimiento
-      })
-    });
-
-    const contentType = res.headers.get("content-type");
-    if (!contentType || !contentType.includes("application/json")) {
-      const textResponse = await res.text();
-      throw new Error("El servidor no devolvió JSON válido");
-    }
-
-    const data = await res.json();
-    
-    if (!res.ok) {
-      throw new Error(data.message || `Error HTTP ${res.status}`);
-    }
-    
-    return data;
-  } catch (error) {
-    console.error("Error en renovarGarantiaSafePad:", error);
-    throw error;
-  }
-};
-
-// === Obtener estados de reparación del usuario ===
-export const obtenerEstadosReparacion = async () => {
-  try {
-    const token = await getAuthToken();
-    
-    if (!token) {
-      throw new Error("No hay token de autenticación");
-    }
-
-    const res = await fetch(`${BASE_URL}/reparacion/estados`, {
+    const res = await fetch(`${BASE_URL}/cashback/productos`, {
       method: "GET",
       headers: {
         "Authorization": `Bearer ${token}`,
@@ -111,27 +71,13 @@ export const obtenerEstadosReparacion = async () => {
     
     return data;
   } catch (error) {
-    console.error("Error en obtenerEstadosReparacion:", error);
+    console.error("Error en obtenerProductosCashback:", error);
     throw error;
   }
 };
 
-export const obtenerGarantiasPorUsuario = async (id_ipad) => {
-  const token = await getAuthToken();
-  const res = await fetch(`${BASE_URL}/garantia/usuario/${id_ipad}`, {
-    method: "GET",
-    headers: {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json"
-    },
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.message || "Error al obtener garantías");
-  return data;
-};
-
-// === Obtener técnico asignado por proceso ===
-export const obtenerTecnicoPorProceso = async (id_proceso) => {
+// === Reclamar cashback ===
+export const reclamarCashback = async (id_producto) => {
   try {
     const token = await getAuthToken();
     
@@ -139,7 +85,44 @@ export const obtenerTecnicoPorProceso = async (id_proceso) => {
       throw new Error("No hay token de autenticación");
     }
 
-    const res = await fetch(`${BASE_URL}/reparacion/tecnico/${id_proceso}`, {
+    const res = await fetch(`${BASE_URL}/cashback/reclamar`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ id_producto })
+    });
+
+    const contentType = res.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      const textResponse = await res.text();
+      throw new Error("El servidor no devolvió JSON válido");
+    }
+
+    const data = await res.json();
+    
+    if (!res.ok) {
+      throw new Error(data.message || `Error HTTP ${res.status}`);
+    }
+    
+    return data;
+  } catch (error) {
+    console.error("Error en reclamarCashback:", error);
+    throw error;
+  }
+};
+
+// === Obtener historial de cashback ===
+export const obtenerHistorialCashback = async () => {
+  try {
+    const token = await getAuthToken();
+    
+    if (!token) {
+      throw new Error("No hay token de autenticación");
+    }
+
+    const res = await fetch(`${BASE_URL}/cashback/historial`, {
       method: "GET",
       headers: {
         "Authorization": `Bearer ${token}`,
@@ -161,7 +144,7 @@ export const obtenerTecnicoPorProceso = async (id_proceso) => {
     
     return data;
   } catch (error) {
-    console.error("Error en obtenerTecnicoPorProceso:", error);
+    console.error("Error en obtenerHistorialCashback:", error);
     throw error;
   }
 };
